@@ -1,0 +1,397 @@
+---
+title: "D208 Logistic Regression"
+author: "Adam Eyerman"
+date: '2022-07-25'
+output: word_document
+---
+
+# Part I: Research Question
+
+**A1)** Can we predict the probability of churn using explanatory variables in the given data set? If so, which variables contribute the most to this prediction?
+
+**A2)**  The objective of the data analysis is to be able to predict the likelihood of churn for a customer using a variety of explanatory variables. If a logistic regression equation can predict the probability of churn within a reasonable certainty then the stakeholders will benefit from understanding the variables behind why customers choose to terminate their accounts. Adjustments can then be made to any positive or negative correlations for the variables within the regression model to maximize the likelihood of customer retention and avoiding churn.
+
+
+# Part II: Method Justification
+
+**B1)** According to ("The 6 Assumptions of Logistic Regression (With Examples)",2021), a logistic regression model has 6 asssumptions:
+
+  - the response variable is binary
+  - the observations are independent
+  - no multicollinearity among explanatory variables
+  - no extreme outliers
+  - linear relationship between explanatory variables and logit of response variable
+  - sample size is sufficiently large
+ 
+The response variable needs to have 2 possible outcomes to function within a logistic regression. In this case, Churn data is either Yes or No which is valid. The next two assumptions involve the relation of explanatory variables to each other. Each needs to be independent. Extreme outliers need to be removed to create valid logistic model. An established linear relationship must exist between explanatory and logit of response variable. This requires each explanatory variable to have a linear relationship with the probability (0-1) of the response variable. The sample size must be sufficient. The data set being used has 10,000 observations and will suffice.
+
+
+**B2)** I will be using R and RStudio for my analysis using multiple logistic regression. According to ("R: What Is R?", n.d.) R provides a wide variety of statistical and graphical techniques and is highly extensible. This includes linear and non-linear models and the ability to utilize extensions through packages to further its capabilities. R offers an open source and easy to navigate environment for data wrangling, manipulating, cleaning and analyzing. My analysis will involve all of these tasks and R serves as great tool to gather data, prepare it for analysis, and run predictive models. Also the R-Markdown feature (RMD) is an efficient way to organize all aspects of the data analysis process and creates either an HTML, PDF, or Word document to present the analysis. 
+
+**B3)** According to (Swaminathan, 2019), logistic regression is used when the dependent variable is categorical. The research question is attempting to determine the probability of Churn which is a categorical variable with possible response of "Yes" or "No". This makes the dependent variable a binomial. Using logistic regression is ideal for determining the answer to the research question. By using binary logistic regression, the research question can be evaluated by forming a logistic regression model using a variety of explanatory variables to determine the probability of Churn.  
+
+
+# Part III: Data Preparation
+
+**C1)** The main objective of the data preparation process is to create a clean and reliable data set of predictor variables and the target variable. The first step will be to upload the churn data set and evaluate the columns for any NULL or missing values.  If found, then an imputation process will be done to normalize the data using central tendencies of mean, median or mode. Next would be to examine for outliers in the continuous variables. If found, these value would be removed. Also the survey response categories (Item1-8) will be altered to their specific titles for more clarity.
+  I will convert the binary and categorical variables into numeric values to utilize them for the multiple logistic regression equation. For example the Churn variable consists of "Yes" and "No" for possible values. I would replace each value type with a number (0,1) in order to use the variable in the regression model. 
+  Once prepared, I will create a new data set (churn_prepared) that will be used for developing the logistic regression model. 
+  
+**C2)** The churn_clean data set has 50 variables and 10,000 observations. For the research question, the data set will be reduced to 34 variables for the analysis. The variables of CaseOrder, Customer_id, Interaction, UID, City, State, County, Zip, Lat, Lng, Population, Area, TimeZone, Job, Marital, PaymentMethod were removed from the data set. The 34 remaining variables are numeric, integer, and categorical data. The categorical variables were converted to integer for the logistic regression model. These include: Gender, Churn, Techie,	Contract,	Port_modem,	Tablet,	InternetService, Phone,	Multiple,	OnlineSecurity,	OnlineBackup,	DeviceProtection,	TechSupport,	StreamingTV,	StreamingMovies, and	PaperlessBilling. The Gender variable has 3 distinct values and will be converted to 0, 1, 2 respectively while the remaining variables will be converted to 0 or 1 based on the Yes or No response value. The numeric variables will be Tenure, Outage_sec_perweek, MonthlyCharge, Bandwidth_GB_Year, and Income. The integer variables will be Children, Age, Yearly_equip_failure, Email, Contacts, Timely_response, Timely_fixes, Timely_replacements, Reliability, Options, Respectful_response, Courteous_exchange, and Active_listening.
+
+Preparation: I will gather the summary statistics by running the summary() function, which will acquire the Minimum, 1st Quartile, Median, Mean, 3rd Quartile, and Maximum for each variable. Both univariate and bivariate visualizations will be analyzed. This will provide information about the distribution of the variables. The variables need a normal distribution to be effective in the logistic regression model.
+
+Assessment: After assessing the summary statistics of the predictor variables there were no issues with distribution. Details shown in C3 and C4.
+
+**C3)** The data set was prepared using the following steps:
+
+  - Load the data set "churn_clean.csv"
+  - Install package "tidyverse" and load library accordingly
+  - Check for NULL or missing values
+  - Rename columns (Item1-8) to respective names for more clarity
+  - Change categorical variables to integer
+  - Replace categorical variables with integer version
+  - Remove unnecessary variables that will not be included in linear regression model
+  - View summary statistics using
+  - Display univariate visualizations for distribution analysis
+  - Display bivariate visualization for distribution analysis with target variable
+
+#Install package "tidyverse" 
+install.packages("tidyverse")
+#Install packages needed for Confusion Matrix 
+install.packages("ISLR")
+install.packages("caret")
+install.packages("InformationValue")
+```{r}
+#Load libraries
+library(tidyverse)
+library(InformationValue)
+library(ISLR)
+
+#Load the data set "churn_clean.csv"
+churn_clean <- read.csv('churn_clean.csv')
+
+#Check for NULL or missing values
+colSums(is.na(churn_clean))
+
+#Rename columns (Item1-8) to respective names for more clarity
+churn_updated <- churn_clean %>% rename(Timely_response = Item1, Timely_fixes = Item2, Timely_replacements = Item3, Reliability = Item4, Options = Item5, Respectful_response = Item6, Courteous_exchange = Item7, Active_listening = Item8)       
+
+#Change categorical variables to integer
+churn_new <- churn_clean$Churn          # Replicating vector
+churn_new <- as.character(churn_new)    # Converting factor to character
+churn_new[churn_new == "Yes"] <- 1      # Replacing Yes by 1
+churn_new[churn_new == "No"] <- 0       # Replacing No by 0
+churn_new <- as.integer(churn_new)      # Converting character to numeric
+
+gender_new <- churn_clean$Gender          # Replicating vector
+gender_new <- as.character(gender_new)    # Converting factor to character
+gender_new[gender_new == "Male"] <- 2      # Replacing Yes by 2
+gender_new[gender_new == "Female"] <- 1       # Replacing No by 1
+gender_new[gender_new == "Nonbinary"] <- 0      # Replacing No by 0
+gender_new <- as.integer(gender_new)      # Converting character to numeric
+
+
+techie_new <- churn_clean$Techie         # Replicating vector
+techie_new <- as.character(techie_new)    # Converting factor to character
+techie_new[techie_new == "Yes"] <- 1      # Replacing Yes by 1
+techie_new[techie_new == "No"] <- 0      # Replacing No by 0
+techie_new <- as.integer(techie_new)      # Converting character to numeric
+  
+
+paperless_billing_new <- churn_clean$PaperlessBilling    # Replicating vector
+paperless_billing_new <- as.character(paperless_billing_new)# Converting factor to character
+paperless_billing_new[paperless_billing_new == "Yes"] <- 1   # Replacing Yes by 1
+paperless_billing_new[paperless_billing_new == "No"] <- 0  # Replacing No by 0
+paperless_billing_new <- as.integer(paperless_billing_new)# Converting character to numeric
+ 
+
+streaming_movies_new <- churn_clean$StreamingMovies # Replicating vector
+streaming_movies_new <- as.character(streaming_movies_new)  # Converting factor to character
+streaming_movies_new[streaming_movies_new == "Yes"] <- 1 # Replacing Yes by 1
+streaming_movies_new[streaming_movies_new == "No"] <- 0   # Replacing No by 0
+streaming_movies_new <- as.integer(streaming_movies_new) # Converting character to numeric
+
+
+streaming_tv_new <- churn_clean$StreamingTV # Replicating vector
+streaming_tv_new <- as.character(streaming_tv_new) # Converting factor to character
+streaming_tv_new[streaming_tv_new == "Yes"] <- 1 # Replacing Yes by 1
+streaming_tv_new[streaming_tv_new == "No"] <- 0 # Replacing No by 0
+streaming_tv_new <- as.integer(streaming_tv_new) # Converting character to numeric
+ 
+
+techsupport_new <- churn_clean$TechSupport # Replicating vector
+techsupport_new <- as.character(techsupport_new) # Converting factor to character
+techsupport_new[techsupport_new == "Yes"] <- 1   # Replacing Yes by 1
+techsupport_new[techsupport_new == "No"] <- 0  # Replacing No by 0
+techsupport_new <- as.integer(techsupport_new) # Converting character to numeric
+
+
+device_protection_new <- churn_clean$DeviceProtection      # Replicating vector
+device_protection_new <- as.character(device_protection_new) # Converting factor to character
+device_protection_new[device_protection_new == "Yes"] <- 1# Replacing Yes by 1
+device_protection_new[device_protection_new == "No"] <- 0  # Replacing No by 0
+device_protection_new <- as.integer(device_protection_new)  # Converting character to numeric
+ 
+
+online_backup_new <- churn_clean$OnlineBackup    # Replicating vector
+online_backup_new <- as.character(online_backup_new)  # Converting factor to character
+online_backup_new[online_backup_new == "Yes"] <- 1   # Replacing Yes by 1
+online_backup_new[online_backup_new == "No"] <- 0   # Replacing No by 0
+online_backup_new <- as.integer(online_backup_new) # Converting character to numeric
+ 
+
+online_security_new <- churn_clean$OnlineSecurity   # Replicating vector
+online_security_new <- as.character(online_security_new) # Converting factor to character
+online_security_new[online_security_new == "Yes"] <- 1   # Replacing Yes by 1
+online_security_new[online_security_new == "No"] <- 0    # Replacing No by 0
+online_security_new <- as.integer(online_security_new) # Converting character to numeric
+ 
+
+multiple_new <- churn_clean$Multiple  # Replicating vector
+multiple_new <- as.character(multiple_new)    # Converting factor to character
+multiple_new[multiple_new == "Yes"] <- 1      # Replacing Yes by 1
+multiple_new[multiple_new == "No"] <- 0      # Replacing No by 0
+multiple_new <- as.integer(multiple_new)      # Converting character to numeric
+
+
+phone_new <- churn_clean$Phone  # Replicating vector
+phone_new <- as.character(phone_new)    # Converting factor to character
+phone_new[phone_new == "Yes"] <- 1      # Replacing Yes by 1
+phone_new[phone_new == "No"] <- 0      # Replacing No by 0
+phone_new <- as.integer(phone_new)      # Converting character to numeric
+
+
+tablet_new <- churn_clean$Tablet # Replicating vector
+tablet_new <- as.character(tablet_new)    # Converting factor to character
+tablet_new[tablet_new == "Yes"] <- 1      # Replacing Yes by 1
+tablet_new[tablet_new == "No"] <- 0      # Replacing No by 0
+tablet_new <- as.integer(tablet_new)      # Converting character to numeric
+
+
+port_modem_new <- churn_clean$Port_modem # Replicating vector
+port_modem_new <- as.character(port_modem_new) # Converting factor to character
+port_modem_new[port_modem_new == "Yes"] <- 1      # Replacing Yes by 1
+port_modem_new[port_modem_new == "No"] <- 0      # Replacing No by 0
+port_modem_new <- as.integer(port_modem_new)      # Converting character to numeric
+ 
+
+contract_new <- churn_clean$Contract          # Replicating vector
+contract_new <- as.character(contract_new)    # Converting factor to character
+contract_new[contract_new == "Two Year"] <- 2      # Replacing Yes by 2
+contract_new[contract_new == "One year"] <- 1       # Replacing No by 1
+contract_new[contract_new == "Month-to-month"] <- 0      # Replacing No by 0
+contract_new <- as.integer(contract_new)      # Converting character to numeric
+ 
+
+internet_new <- churn_clean$InternetService        # Replicating vector
+internet_new <- as.character(internet_new)    # Converting factor to character
+internet_new[internet_new == "Fiber Optic"] <- 2      # Replacing Yes by 2
+internet_new[internet_new == "DSL"] <- 1       # Replacing No by 1
+internet_new[internet_new == "None"] <- 0      # Replacing No by 0
+internet_new <- as.integer(internet_new)      # Converting character to numeric
+  
+
+#Replace categorical variables with integer version
+churn_updated$Churn <- churn_new
+churn_updated$Contract <- contract_new
+churn_updated$DeviceProtection <- device_protection_new
+churn_updated$Gender <- gender_new
+churn_updated$InternetService <- internet_new
+churn_updated$Multiple <- multiple_new
+churn_updated$OnlineSecurity <- online_security_new
+churn_updated$OnlineBackup <- online_backup_new
+churn_updated$PaperlessBilling <- paperless_billing_new
+churn_updated$Phone <- phone_new
+churn_updated$Port_modem <- port_modem_new
+churn_updated$StreamingTV <- streaming_tv_new
+churn_updated$StreamingMovies <- streaming_movies_new
+churn_updated$Tablet <- tablet_new
+churn_updated$Techie <- techie_new
+churn_updated$TechSupport <- techsupport_new
+
+#Remove unnecessary variables that will not be included in linear regression model
+churn_prepared <- subset(churn_updated, select = -c(CaseOrder, Customer_id, Interaction, UID, City, State, County, Zip, Lat, Lng, Population, Area, TimeZone, Job, Marital, PaymentMethod))
+  
+#View summary statistics using
+summary(churn_prepared)
+
+```
+**C4)**
+```{r}
+#Display univariate visualizations for distribution analysis
+num_customers = 1
+
+#Churn
+churn_plot <- ggplot(churn_clean,
+             aes(Churn,num_customers)) +
+  geom_bar(stat = "identity")
+churn_plot
+
+#Gender
+Gender_plot <- ggplot(churn_clean,
+             aes(Gender,num_customers)) +
+  geom_bar(stat = "identity")
+Gender_plot
+
+#Bandwidth
+Bandwidth_plot <- ggplot(churn_clean,
+                      aes(Bandwidth_GB_Year)) +
+  geom_boxplot()
+Bandwidth_plot
+
+#MonthlyCharge
+MonthlyCharge_plot <- ggplot(churn_clean,
+                         aes(MonthlyCharge)) +
+  geom_boxplot()
+MonthlyCharge_plot
+
+#Reliability
+Reliability_plot <- ggplot(churn_prepared,
+                             aes(Reliability)) +
+  geom_bar()
+Reliability_plot
+
+#Display bivariate visualization for distribution analysis with target variable
+
+#Outage(Bi)
+Outage_biplot <- ggplot(churn_clean,
+                      aes(Churn, Outage_sec_perweek)) +
+  geom_point() 
+Outage_biplot
+
+#Income(Bi)
+Income_biplot <- ggplot(churn_clean,
+                      aes(Churn, Income)) +
+  geom_point() +
+    ylim(0,300000)
+Income_biplot
+
+#Age(Bi)
+Age_biplot <- ggplot(churn_clean,
+                      aes(Churn, Age)) +
+  geom_point() 
+Age_biplot
+
+#Table Creation for Biplot
+churn_test <- churn_new
+other_table <- table(churn_prepared$Gender, churn_test)
+
+
+#Gender(Bi)
+Gender_Churn <- barplot(other_table,
+        main = "Gender v Churn",
+        xlab = "Churn", ylab = "Frequency",
+        col = c("darkgrey", "darkblue", "red"),
+        beside = TRUE) # Grouped bars
+
+Gender_Churn
+```
+**C5)**
+```{r}
+#Code of Prepared Data Set
+library(data.table)
+
+fwrite(churn_prepared, "C:\\Users\\eyerm\\Dropbox\\PC\\Downloads\\churn_prepared.csv")
+```
+
+# Part IV: Model Comparison and Analysis
+
+**D1)** Initial Multiple Logistic Regression Model:
+```{r}
+Logistic_Model <- glm(Churn ~ Children + Age + Income + gender_new + Tenure + Outage_sec_perweek + Email +
+                    Contacts + Yearly_equip_failure + techie_new + port_modem_new + tablet_new + 
+                    internet_new + phone_new + multiple_new + online_backup_new + online_security_new + 
+                    streaming_movies_new + streaming_tv_new + Bandwidth_GB_Year + MonthlyCharge + 
+                    paperless_billing_new + contract_new + device_protection_new + techsupport_new + 
+                    Timely_response + Timely_fixes + Timely_replacements + Reliability + Options + 
+                    Respectful_response + Active_listening + Courteous_exchange, family = "binomial", data = churn_prepared)
+                   
+
+summary(Logistic_Model)
+
+pscl::pR2(Logistic_Model)["McFadden"]
+```
+
+**D2)**
+
+The research question is attempting to predict the probability of churn for any particular customer. The reduced model maintains the predictive power and retains the statistically significant variables leading to a more concise regression model with no loss of quality. 
+
+The initial model was reduced using the P-value significance metric of 0.05. All variables under that value were considered significant and kept in the reduced model. The remainder of the variables were removed. The model went from 33 variables to 16 variables. After the reduction the model maintained its McFadden's R-squared which was over 0.40 and confirmed the retained predictive power from the initial model. 
+
+
+
+**D3)** Reduced Logistic Regression Model:
+```{r}
+Reduced_Logistic_Model <- glm(churn_new ~ Children + Age + Tenure + techie_new + port_modem_new + 
+                        internet_new + phone_new + online_backup_new + online_security_new + 
+                        streaming_movies_new + streaming_tv_new + Bandwidth_GB_Year + MonthlyCharge + 
+                        paperless_billing_new + contract_new + device_protection_new, family = "binomial", data = churn_prepared)
+
+
+summary(Reduced_Logistic_Model)
+
+pscl::pR2(Reduced_Logistic_Model)["McFadden"]
+```   
+
+
+**E1)**
+The initial model was reduced using the P-value significance metric of 0.05. All variables under that value were considered significant and kept in the reduced model. The remainder of the variables were removed. The model went from 33 variables to 16 variables. After the reduction the model maintained its McFadden's R-squared which was over 0.40 and confirmed the retained predictive power from the initial model. 
+
+```{r}
+#McFadden Values
+pscl::pR2(Logistic_Model)["McFadden"]
+pscl::pR2(Reduced_Logistic_Model)["McFadden"]
+
+#Summary of Models
+summary(Logistic_Model)
+summary(Reduced_Logistic_Model)
+```
+
+**E2)**
+
+The confusion matrices for both the Initial and Reduced model displayed a similar output. 
+
+The predictions for the refined model were as follows:
+
+ - True Negative = 6901
+ - True Positive = 2805
+ - False Negative = 449
+ - False Positive = 565
+ 
+The total misclassification rate was 0.265.
+
+The predictions for the initial model were as follows:
+
+ - True Negative = 6901
+ - True Positive = 2802
+ - False Negative = 449
+ - False Positive = 568
+ 
+The total misclassification rate was 0.265.
+```{r}
+#Initial Model Confusion Matrix
+predicted <- predict(Logistic_Model, churn_prepared, type="response")
+
+confusionMatrix(churn_new, predicted)
+
+sensitivity(churn_new, predicted)
+
+specificity(churn_new, predicted)
+
+misClassError(churn_new, predicted, threshold="optimal")
+
+#Reduced Model Confusion Matrix
+predicted_2 <- predict(Reduced_Logistic_Model, churn_prepared, type="response")
+
+confusionMatrix(churn_new, predicted_2)
+
+sensitivity(churn_new, predicted_2)
+
+specificity(churn_new, predicted_2)
+
+misClassError(churn_new, predicted_2, threshold="optimal")
+```
+
+**E3)**
+All code shown above in D1-E2.

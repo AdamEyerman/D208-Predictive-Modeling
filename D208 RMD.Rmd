@@ -1,0 +1,340 @@
+---
+title: "D208 Predictive Modeling"
+author: "Adam Eyerman"
+date: '2022-07-07'
+output:
+  word_document: default
+  html_document: default
+---
+# Part I: Research Question
+
+**A1)** How long will a customers tenure be with the company? Can any combination of variables predict this value accurately?
+
+**A2)** The objective of the data analysis is to be able to predict the tenure of a customer using a variety of explanatory variables. If a linear regression equation can predict tenure within a reasonable certainty then the stakeholders will benefit from understanding the variables impacting customer retention over time. Adjustments can then be made to any positive or negative correlations for the variables within the regression model to maximize tenure of customers.
+
+
+
+
+# Part II: Method Justification
+
+**B1)** According to ("The Five Assumptions of Multiple Linear Regression", 2021) we must make sure that five assumptions are met when performing a multiple linear regression.
+
+ - A linear relationship exists between each independent variable and the dependent variable.
+ - None of the independent variables are highly correlated
+ - Each observation is independent 
+ - Residuals have the same variance at every point in model
+ - Residuals of the model have a normal distribution
+ 
+ If one assumption is violated then the model may be unreliable.
+ 
+ 
+**B2)** I will be using R and RStudio for my analysis using multiple linear regression. According to ("R: What Is R?", n.d.) R provides a wide variety of statistical and graphical techniques and is highly extensible. This includes linear and non-linear models and the ability to utilize extensions through packages to further its capabilities. R offers an open source and easy to navigate environment for data wrangling, manipulating, cleaning and analyzing. My analysis will involve all of these tasks and R serves as great tool to gather data, prepare it for analysis, and run predictive models. Also the R-Markdown feature (RMD) is an efficient way to organize all aspects of the data analysis process and creates either an HTML, PDF, or Word document to present the analysis. 
+
+**B3)** Multiple linear regression is a predictive model used for estimating the relationship between two or more independent variables and a singular dependent variable (Bevans, 2022). The dependent variable is continuous and therefore is appropriate for this technique. If the dependent variable was binary then a logistic regression would be utilized. The question involves more than one independent variable, a continuous dependent variable, and a need for a predictive model to be successfully analyzed. In my analysis I am attempting to find a model that can predict the tenure of a particular customer. The assumption will be that there is more than one explanatory variable needed to answer this question accurately. By formulating this equation I can determine which variables positively and negatively impact the length of tenure. Multiple linear regression fits this description and can provide a possible equation to answer the research question. 
+ 
+# Part III: Data Preparation
+
+**C1)** The main goal of the data preparation process will be to create a clean and reliable data set on all necessary predictor variables and the singular response variable. The first step will be to upload the churn data set and examine the columns for any NULL or missing values that may skew the data. If any NULL or missing values are found then a imputation process will be done to normalize the data accordingly using central tendencies of mean, median or mode. Next would be to examine for any outliers within the continuous variables. If found these value could be removed if they are clearly beyond the scope of the variable parameters. Then negative values found in variables that logically can only be positive to be valid will be switched to their absolute value. Also the survey response categories (Item1-8) will be modified to their specific names for clarity.
+  Since the variables being using for the model will include numeric, integer, binary and categorical values I will convert the binary and categorical variables into numeric values to utilize them for the multiple linear regression equation. For example the Gender variable consists of "Male", "Female" and "Nonbinary" for possible values. I would replace each value type with a number (0,1,2) which makes it possible to use within the regression model. 
+  Once the needed variables are cleaned and prepared I will create a new data set (churn_prepared) that will be used for developing the regression model. 
+  
+**C2)** The churn_clean data set consists of 50 variables and 10,000 observations. For the research question, the data set will be reduced to 34 variables to create a more targeted approach to the analysis. The removal of CaseOrder, Customer_id, Interaction, UID, City, State, County, Zip, Lat, Lng, Population, Area, TimeZone, Job, Marital, PaymentMethod is needed to consolidate the data set. The 34 remaining variables will comprise of numeric, integer, and categorical data. The categorical variables were converted to integer in order to include them in the linear regression model. These include: Gender, Churn, Techie,	Contract,	Port_modem,	Tablet,	InternetService, Phone,	Multiple,	OnlineSecurity,	OnlineBackup,	DeviceProtection,	TechSupport,	StreamingTV,	StreamingMovies, and	PaperlessBilling. The Gender variable has 3 distinct values and will be converted to 0, 1, 2 respectively while the remaining variables will be converted to 0 or 1 based on the Yes or No response value. The numeric variables will be Tenure, Outage_sec_perweek, MonthlyCharge, Bandwidth_GB_Year, and Income. The integer variables will be Children, Age, Yearly_equip_failure, Email, Contacts, Timely_response, Timely_fixes, Timely_replacements, Reliability, Options, Respectful_response, Courteous_exchange, and Active_listening.
+
+Preparation: Using this data set I will gather the summary statistics. Running the summary() function I will acquire the Minimum, 1st Quartile, Median, Mean, 3rd Quartile, and Maximum for each variable. Also both univariate and bivariate visualizations will be analyzed. This will provide information about the distribution of the variables within the data set. In order for the variables to be effective in the linear regression model the distribution must be normal. 
+
+Assessment: After assessing the summary statistics of the predictor variables the data showed no issues in regards to distribution. Details shown in C3 and C4.
+
+**C3)** The data set was prepared using the following steps:
+
+  - Load the data set "churn_clean.csv"
+  - Install package "tidyverse" and load library accordingly
+  - Check for NULL or missing values
+  - Rename columns (Item1-8) to respective names for more clarity
+  - Change categorical variables to integer
+  - Replace categorical variables with integer version
+  - Remove unnecessary variables that will not be included in linear regression model
+  - View summary statistics using
+  - Display univariate visualizations for distribution analysis
+  - Display bivariate visualization for distribution analysis with target variable
+
+#Install package "tidyverse" 
+install.packages("tidyverse")
+```{r}
+#Load library
+library(tidyverse)
+
+#Load the data set "churn_clean.csv"
+churn_clean <- read.csv('churn_clean.csv')
+
+#Check for NULL or missing values
+colSums(is.na(churn_clean))
+
+#Rename columns (Item1-8) to respective names for more clarity
+churn_updated <- churn_clean %>% rename(Timely_response = Item1, Timely_fixes = Item2, Timely_replacements = Item3, Reliability = Item4, Options = Item5, Respectful_response = Item6, Courteous_exchange = Item7, Active_listening = Item8)       
+
+#Change categorical variables to integer
+churn_new <- churn_clean$Churn          # Replicating vector
+churn_new <- as.character(churn_new)    # Converting factor to character
+churn_new[churn_new == "Yes"] <- 1      # Replacing Yes by 1
+churn_new[churn_new == "No"] <- 0       # Replacing No by 0
+churn_new <- as.integer(churn_new)      # Converting character to numeric
+
+gender_new <- churn_clean$Gender          # Replicating vector
+gender_new <- as.character(gender_new)    # Converting factor to character
+gender_new[gender_new == "Male"] <- 2      # Replacing Yes by 2
+gender_new[gender_new == "Female"] <- 1       # Replacing No by 1
+gender_new[gender_new == "Nonbinary"] <- 0      # Replacing No by 0
+gender_new <- as.integer(gender_new)      # Converting character to numeric
+
+
+techie_new <- churn_clean$Techie         # Replicating vector
+techie_new <- as.character(techie_new)    # Converting factor to character
+techie_new[techie_new == "Yes"] <- 1      # Replacing Yes by 1
+techie_new[techie_new == "No"] <- 0      # Replacing No by 0
+techie_new <- as.integer(techie_new)      # Converting character to numeric
+  
+
+paperless_billing_new <- churn_clean$PaperlessBilling    # Replicating vector
+paperless_billing_new <- as.character(paperless_billing_new)# Converting factor to character
+paperless_billing_new[paperless_billing_new == "Yes"] <- 1   # Replacing Yes by 1
+paperless_billing_new[paperless_billing_new == "No"] <- 0  # Replacing No by 0
+paperless_billing_new <- as.integer(paperless_billing_new)# Converting character to numeric
+ 
+
+streaming_movies_new <- churn_clean$StreamingMovies # Replicating vector
+streaming_movies_new <- as.character(streaming_movies_new)  # Converting factor to character
+streaming_movies_new[streaming_movies_new == "Yes"] <- 1 # Replacing Yes by 1
+streaming_movies_new[streaming_movies_new == "No"] <- 0   # Replacing No by 0
+streaming_movies_new <- as.integer(streaming_movies_new) # Converting character to numeric
+
+
+streaming_tv_new <- churn_clean$StreamingTV # Replicating vector
+streaming_tv_new <- as.character(streaming_tv_new) # Converting factor to character
+streaming_tv_new[streaming_tv_new == "Yes"] <- 1 # Replacing Yes by 1
+streaming_tv_new[streaming_tv_new == "No"] <- 0 # Replacing No by 0
+streaming_tv_new <- as.integer(streaming_tv_new) # Converting character to numeric
+ 
+
+techsupport_new <- churn_clean$TechSupport # Replicating vector
+techsupport_new <- as.character(techsupport_new) # Converting factor to character
+techsupport_new[techsupport_new == "Yes"] <- 1   # Replacing Yes by 1
+techsupport_new[techsupport_new == "No"] <- 0  # Replacing No by 0
+techsupport_new <- as.integer(techsupport_new) # Converting character to numeric
+
+
+device_protection_new <- churn_clean$DeviceProtection      # Replicating vector
+device_protection_new <- as.character(device_protection_new) # Converting factor to character
+device_protection_new[device_protection_new == "Yes"] <- 1# Replacing Yes by 1
+device_protection_new[device_protection_new == "No"] <- 0  # Replacing No by 0
+device_protection_new <- as.integer(device_protection_new)  # Converting character to numeric
+ 
+
+online_backup_new <- churn_clean$OnlineBackup    # Replicating vector
+online_backup_new <- as.character(online_backup_new)  # Converting factor to character
+online_backup_new[online_backup_new == "Yes"] <- 1   # Replacing Yes by 1
+online_backup_new[online_backup_new == "No"] <- 0   # Replacing No by 0
+online_backup_new <- as.integer(online_backup_new) # Converting character to numeric
+ 
+
+online_security_new <- churn_clean$OnlineSecurity   # Replicating vector
+online_security_new <- as.character(online_security_new) # Converting factor to character
+online_security_new[online_security_new == "Yes"] <- 1   # Replacing Yes by 1
+online_security_new[online_security_new == "No"] <- 0    # Replacing No by 0
+online_security_new <- as.integer(online_security_new) # Converting character to numeric
+ 
+
+multiple_new <- churn_clean$Multiple  # Replicating vector
+multiple_new <- as.character(multiple_new)    # Converting factor to character
+multiple_new[multiple_new == "Yes"] <- 1      # Replacing Yes by 1
+multiple_new[multiple_new == "No"] <- 0      # Replacing No by 0
+multiple_new <- as.integer(multiple_new)      # Converting character to numeric
+
+
+phone_new <- churn_clean$Phone  # Replicating vector
+phone_new <- as.character(phone_new)    # Converting factor to character
+phone_new[phone_new == "Yes"] <- 1      # Replacing Yes by 1
+phone_new[phone_new == "No"] <- 0      # Replacing No by 0
+phone_new <- as.integer(phone_new)      # Converting character to numeric
+
+
+tablet_new <- churn_clean$Tablet # Replicating vector
+tablet_new <- as.character(tablet_new)    # Converting factor to character
+tablet_new[tablet_new == "Yes"] <- 1      # Replacing Yes by 1
+tablet_new[tablet_new == "No"] <- 0      # Replacing No by 0
+tablet_new <- as.integer(tablet_new)      # Converting character to numeric
+
+
+port_modem_new <- churn_clean$Port_modem # Replicating vector
+port_modem_new <- as.character(port_modem_new) # Converting factor to character
+port_modem_new[port_modem_new == "Yes"] <- 1      # Replacing Yes by 1
+port_modem_new[port_modem_new == "No"] <- 0      # Replacing No by 0
+port_modem_new <- as.integer(port_modem_new)      # Converting character to numeric
+ 
+
+contract_new <- churn_clean$Contract          # Replicating vector
+contract_new <- as.character(contract_new)    # Converting factor to character
+contract_new[contract_new == "Two Year"] <- 2      # Replacing Yes by 2
+contract_new[contract_new == "One year"] <- 1       # Replacing No by 1
+contract_new[contract_new == "Month-to-month"] <- 0      # Replacing No by 0
+contract_new <- as.integer(contract_new)      # Converting character to numeric
+ 
+
+internet_new <- churn_clean$InternetService        # Replicating vector
+internet_new <- as.character(internet_new)    # Converting factor to character
+internet_new[internet_new == "Fiber Optic"] <- 2      # Replacing Yes by 2
+internet_new[internet_new == "DSL"] <- 1       # Replacing No by 1
+internet_new[internet_new == "None"] <- 0      # Replacing No by 0
+internet_new <- as.integer(internet_new)      # Converting character to numeric
+  
+
+#Replace categorical variables with integer version
+churn_updated$Churn <- churn_new
+churn_updated$Contract <- contract_new
+churn_updated$DeviceProtection <- device_protection_new
+churn_updated$Gender <- gender_new
+churn_updated$InternetService <- internet_new
+churn_updated$Multiple <- multiple_new
+churn_updated$OnlineSecurity <- online_security_new
+churn_updated$OnlineBackup <- online_backup_new
+churn_updated$PaperlessBilling <- paperless_billing_new
+churn_updated$Phone <- phone_new
+churn_updated$Port_modem <- port_modem_new
+churn_updated$StreamingTV <- streaming_tv_new
+churn_updated$StreamingMovies <- streaming_movies_new
+churn_updated$Tablet <- tablet_new
+churn_updated$Techie <- techie_new
+churn_updated$TechSupport <- techsupport_new
+
+#Remove unnecessary variables that will not be included in linear regression model
+churn_prepared <- subset(churn_updated, select = -c(CaseOrder, Customer_id, Interaction, UID, City, State, County, Zip, Lat, Lng, Population, Area, TimeZone, Job, Marital, PaymentMethod))
+  
+#View summary statistics using
+summary(churn_prepared)
+
+```
+**C4)**
+```{r}
+#Display univariate visualizations for distribution analysis
+num_customers = 1
+
+#Churn
+churn_plot <- ggplot(churn_clean,
+             aes(Churn,num_customers)) +
+  geom_bar(stat = "identity")
+churn_plot
+
+#Gender
+Gender_plot <- ggplot(churn_clean,
+             aes(Gender,num_customers)) +
+  geom_bar(stat = "identity")
+Gender_plot
+
+#Bandwidth
+Bandwidth_plot <- ggplot(churn_clean,
+                      aes(Bandwidth_GB_Year)) +
+  geom_boxplot()
+Bandwidth_plot
+
+#MonthlyCharge
+MonthlyCharge_plot <- ggplot(churn_clean,
+                         aes(MonthlyCharge)) +
+  geom_boxplot()
+MonthlyCharge_plot
+
+#Reliability
+Reliability_plot <- ggplot(churn_prepared,
+                             aes(Reliability)) +
+  geom_bar()
+Reliability_plot
+
+#Display bivariate visualization for distribution analysis with target variable
+
+#Outage(Bi)
+Outage_biplot <- ggplot(churn_clean,
+                      aes(Outage_sec_perweek, Tenure)) +
+  geom_point() 
+Outage_biplot
+
+#Income(Bi)
+Income_biplot <- ggplot(churn_clean,
+                      aes(Income, Tenure)) +
+  geom_point() +
+    xlim(0,300000)
+Income_biplot
+
+#Age(Bi)
+Age_biplot <- ggplot(churn_clean,
+                      aes(Age, Tenure)) +
+  geom_point() 
+Age_biplot
+
+#Gender(Bi)
+Gender_biplot <- ggplot(churn_clean,
+                   aes(Gender, Tenure)) +
+  geom_point() 
+Gender_biplot
+
+```
+**C5)**
+```{r}
+#Code of Prepared Data Set
+library(data.table)
+
+fwrite(churn_prepared, "C:\\Users\\eyerm\\Dropbox\\PC\\Downloads\\churn_prepared.csv")
+```
+
+
+# Part IV: Model Comparison and Analysis
+
+**D1)** Initial Multiple Regression Model:
+```{r}
+Initial_Model <- lm(Tenure ~ Children + Age + Income + gender_new + churn_new + Outage_sec_perweek + Email +
+                    Contacts + Yearly_equip_failure + techie_new + port_modem_new + tablet_new + 
+                    internet_new + phone_new + multiple_new + online_backup_new + online_security_new + 
+                    streaming_movies_new + streaming_tv_new + Bandwidth_GB_Year + MonthlyCharge + 
+                    paperless_billing_new + contract_new + device_protection_new + techsupport_new + 
+                    Timely_response + Timely_fixes + Timely_replacements + Reliability + Options + 
+                    Respectful_response + Active_listening + Courteous_exchange, data = churn_prepared)
+                   
+
+summary(Initial_Model)
+```
+**Initial Equation**
+
+$Tenure = -3.8 - 0.36*Children + 0.04*Age + 0.000001*Income - 0.73*gendernew - 1.5*churnnew + 0.01*Outagesecperweek + 0.0008*Email - 0.02*Contacts - 0.03*Yearlyequipfailure + 0.06*techienew + 0.05*portmodemnew + 0.004*tabletnew + 0.32*internetnew + 0.02*phonenew - 1.37*multiplenew - 1.46*onlinebackupnew - 0.99*onlinesecuritynew - 3.11*streamingmoviesnew - 3.21*streamingtvnew + 0.01*BandwidthGBYear + 0.02*MonthlyCharge + 0.08*paperlessbillingnew - 0.21*contractnew - 1.17*deviceprotectionnew - 0.35*techsupportnew + 0.06*Timelyresponse - 0.06*Timelyfixes + 0.03*Timelyreplacements - 0.01*Reliability - 0.04*Options - 0.01*Respectfulresponse - 0.06*Activelistening + 0.004*Courteousexchange$
+
+
+
+**D2)** The procedure I used to reduce the model was p-value significance. The initial model consisted of 33 variables and was reduced to 15 variables. The 17 removed variables did not have p-values under the required 0.05 and therefore did not provide enough statistical relevance to be included in the reduction model. P-value is assessing the correlation between the predictor variable and the target variable. A value over 0.05 suggest the predictor variable has an independent relationship to the target variable and is not needed in the model for analyzing the research question.
+
+
+**D3)** Reduced Multiple Regression Model:
+```{r}
+Reduced_Model <- lm(Tenure ~ Children + Age + gender_new + internet_new + 
+                      multiple_new + online_backup_new + online_security_new + 
+                      streaming_movies_new + streaming_tv_new + Bandwidth_GB_Year + MonthlyCharge + 
+                      contract_new + device_protection_new + techsupport_new + 
+                      Active_listening, data = churn_prepared)
+
+summary(Reduced_Model)
+```
+**Reduced Equation**
+
+$Tenure = -3.95 - 0.37*Children + 0.04*Age - 0.76*gendernew + 0.44*internetnew - 1.38*multiplenew - 1.44*onlinebackupnew - 0.97*onlinesecuritynew - 3.24*streamingmoviesnew - 3.33*streamingtvnew + 0.01*BandwidthGBYear + 0.01*MonthlyCharge - 0.01*contractnew - 1.16*deviceprotectionnew - 0.32*techsupportnew - 0.04*Activelistening$
+
+**E1)** 
+```{r}
+#Initial Model Residual Plot
+initial_residual <- resid(Initial_Model)
+plot(fitted(Initial_Model), initial_residual)
+plot(density(initial_residual))
+qqnorm(initial_residual)
+qqline(initial_residual)
+
+#Reduced Model Residual Plot
+reduced_residual <- resid(Reduced_Model)
+plot(fitted(Reduced_Model), reduced_residual)
+plot(density(reduced_residual))
+qqnorm(reduced_residual)
+qqline(reduced_residual)
+```
